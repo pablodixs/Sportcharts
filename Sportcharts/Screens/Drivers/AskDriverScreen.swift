@@ -53,7 +53,7 @@ struct AskDriverScreen: View {
 							.padding(.horizontal)
 							.padding(.bottom)
 						}
-						.defaultScrollAnchor(.bottom)
+						.defaultScrollAnchor(.top)
 						.onChange(of: viewModel.messages) {
 							
 							guard let last = viewModel.messages.last else {
@@ -142,21 +142,17 @@ struct AskDriverScreen: View {
 							}
 						}
 						VStack {
-							Text("Ask Vrum")
-								.font(.caption)
-								.bold()
-								.foregroundStyle(.gray)
 							Text(
 								"\(driver?.lastName.uppercased() ?? "")"
 							)
 							.fontWidth(.condensed)
+							.font(.title3)
 							.bold()
 						}
-					}
-				}
+					}				}
 				
 				ToolbarItem(placement: .cancellationAction) {
-					Button("Fechar", systemImage: "xmark") {
+					Button(role: .close) {
 						dismiss()
 					}
 				}

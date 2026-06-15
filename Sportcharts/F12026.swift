@@ -1,4 +1,5 @@
 import SwiftUI
+import FoundationModels
 
 // MARK: - Team Colors
 
@@ -86,7 +87,7 @@ private func teamLogoURL(_ slug: String, _ filename: String) -> URL? {
 	return URL(string: "\(base)/\(slug)/\(filename)")
 }
 
-private func f1DriverImageURL(_ path: String) -> URL? {
+public func f1DriverImageURL(_ path: String) -> URL? {
 	let base     = "https://media.formula1.com/image/upload/c_lfill,w_440/q_auto"
 	let fallback = "/d_common:f1:2026:fallback:driver:2026fallbackdriverright.webp"
 	let cdn      = "/v1740000001/common/f1/2026"

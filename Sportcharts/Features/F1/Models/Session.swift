@@ -23,6 +23,7 @@ struct Session: Decodable, Hashable, Identifiable {
 	let location: String
 	let gmtOffset: String
 	let year: Int
+	let isCancelled: Bool
 	
 	enum CodingKeys: String, CodingKey {
 		case sessionKey = "session_key"
@@ -39,6 +40,7 @@ struct Session: Decodable, Hashable, Identifiable {
 		case location
 		case gmtOffset = "gmt_offset"
 		case year
+		case isCancelled = "is_cancelled"
 	}
 
 	var isFuture: Bool {

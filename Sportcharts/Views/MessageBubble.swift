@@ -8,16 +8,16 @@
 import SwiftUI
 
 struct MessageBubble: View {
-
 	let message: ChatMessage
 	let accent: Color
 
 	var isAssistant: Bool {
 		message.role == .assistant
 	}
+	
+	@State private var isPresented = false
 
 	var body: some View {
-
 		HStack {
 
 			if isAssistant {
@@ -31,6 +31,12 @@ struct MessageBubble: View {
 				Spacer(minLength: 40)
 
 				userBubble
+					.onAppear {
+						isPresented = true
+					}
+					.offset(y: isPresented ? 0 : 400)
+					.opacity(isPresented ? 1 : 0)
+					.animation(.spring, value: isPresented)
 			}
 		}
 		.animation(
@@ -50,9 +56,6 @@ extension MessageBubble {
 		) {
 
 			if message.state == .typing && message.content.isEmpty {
-
-				//				TypingIndicator(accent: accent)
-
 				Image(systemName: "tire")
 					.font(.title)
 					.foregroundStyle(accent)
@@ -61,14 +64,12 @@ extension MessageBubble {
 						options: .repeat(.continuous)
 					)
 			} else {
-
 				Text(.init(message.content))
 					.textSelection(.enabled)
 					.lineHeight(.loose)
 			}
 
 			if message.state == .typing && !message.content.isEmpty {
-
 				blinkingCursor
 			}
 		}
@@ -78,7 +79,6 @@ extension MessageBubble {
 
 extension MessageBubble {
 	fileprivate var userBubble: some View {
-
 		Text(message.content)
 			.fontWeight(.medium)
 			.padding(.horizontal, 14)

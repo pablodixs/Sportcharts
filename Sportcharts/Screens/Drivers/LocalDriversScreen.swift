@@ -10,34 +10,40 @@ import SwiftUI
 struct LocalDriversScreen: View {
 	@Namespace private var namespace
 
+	@State private var searchQuery = ""
+
 	var body: some View {
 		NavigationStack {
 			ScrollView {
+				Text("Pilotos".uppercased())
+					.font(.system(size: 72))
+					.fontWeight(.black)
+					.fontWidth(.compressed)
+				
 				LazyVGrid(
 					columns: Array(repeating: GridItem(.flexible()), count: 2),
 					spacing: 8
 				) {
 					ForEach(F1Grid2026.drivers) { driver in
 						NavigationLink(
-							destination: LocalDriverDetail(driverNumber: driver.id)
-								.navigationTransition(
-									.zoom(
-										sourceID: "pilot\(driver.id)",
-										in: namespace
-									)
+							destination: LocalDriverDetail(
+								driverNumber: driver.id
+							)
+							.navigationTransition(
+								.zoom(
+									sourceID: "pilot\(driver.id)",
+									in: namespace
 								)
+							)
 						) {
 							driverCardView(driver)
 						}
 					}
 				}
 			}
-
 			.scrollIndicators(.hidden)
 			.contentMargins(.horizontal, 16)
 		}
-		.navigationTitle("Pilotos")
-		.toolbarTitleDisplayMode(.inlineLarge)
 	}
 
 	@ViewBuilder

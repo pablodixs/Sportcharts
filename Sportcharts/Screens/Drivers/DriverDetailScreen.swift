@@ -18,7 +18,7 @@ struct DriverDetailScreen: View {
 				ProgressView()
 			} else {
 				headerView()
-				
+
 				Spacer()
 			}
 		}
@@ -26,17 +26,19 @@ struct DriverDetailScreen: View {
 		.background(Color.black.ignoresSafeArea())
 		.foregroundStyle(.white)
 		.task {
-				await viewModel.loadDriver(
-					driverNumber: driverNumber,
-					sessionKey: 11236
-				)
+			await viewModel.loadDriver(
+				driverNumber: driverNumber,
+				sessionKey: 11236
+			)
 		}
 	}
 
 	@ViewBuilder
 	private func headerView() -> some View {
 		VStack(alignment: .center) {
-			AsyncImage(url: URL(string: viewModel.selectedDriver?.headshot_url ?? "")) {
+			AsyncImage(
+				url: URL(string: viewModel.selectedDriver?.headshot_url ?? "")
+			) {
 				phase in
 				switch phase {
 				case .empty:
@@ -53,12 +55,12 @@ struct DriverDetailScreen: View {
 					EmptyView()
 				}
 			}
-			
+
 			Text(viewModel.selectedDriver?.full_name ?? "Loading...")
 				.font(.largeTitle)
 				.fontWeight(.semibold)
 				.fontWidth(.condensed)
-			
+
 			Text(viewModel.selectedDriver?.team_name ?? "")
 				.bold()
 		}
@@ -72,7 +74,14 @@ struct DriverDetailScreen: View {
 				.foregroundStyle(.white.opacity(0.2))
 		}
 		.background(
-			LinearGradient(colors: [Color(hex: viewModel.selectedDriver?.team_colour ?? ""), .clear], startPoint: .top, endPoint: .bottom)
+			LinearGradient(
+				colors: [
+					Color(hex: viewModel.selectedDriver?.team_colour ?? ""),
+					.clear,
+				],
+				startPoint: .top,
+				endPoint: .bottom
+			)
 		)
 	}
 }

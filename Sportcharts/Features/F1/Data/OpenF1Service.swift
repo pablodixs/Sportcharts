@@ -33,6 +33,10 @@ final class OpenF1Service {
 	func fetchSessionByKey(key: Int) async throws -> [Session] {
 		try await client.fetch(OpenF1Endpoint.sessions(key: key))
 	}
+	
+	func fetchDriverStandingsBySession(key: Int) async throws -> [DriverStanding] {
+		try await client.fetch(OpenF1Endpoint.driversStandings(sessionKey: key))
+	}
 
 //
 //    func fetchLaps(sessionKey: Int, driverNumber: Int? = nil) async throws -> [Lap] {

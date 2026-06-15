@@ -1,0 +1,210 @@
+{
+  "sourceLanguage" : "pt-BR",
+  "strings" : {
+    "-" : {
+
+    },
+    "#%@" : {
+
+    },
+    "#%lld" : {
+
+    },
+    "%@" : {
+
+    },
+    "%@ %@" : {
+      "localizations" : {
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%@, %@" : {
+      "localizations" : {
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@, %@ " : {
+      "localizations" : {
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@ "
+          }
+        }
+      }
+    },
+    "•" : {
+
+    },
+    "+%.3fs" : {
+
+    },
+    "+%@ p." : {
+
+    },
+    "Análise copiada" : {
+
+    },
+    "Análise da Sessão" : {
+
+    },
+    "Analizar sessão" : {
+
+    },
+    "Ano" : {
+
+    },
+    "Ano de estreia na F1: **%@**" : {
+
+    },
+    "Ask Vrum" : {
+
+    },
+    "Bio" : {
+
+    },
+    "Buscar" : {
+
+    },
+    "Carregando próxima sessão..." : {
+
+    },
+    "Compartilhar" : {
+
+    },
+    "Concluído" : {
+
+    },
+    "Copiar análise" : {
+
+    },
+    "DNF" : {
+
+    },
+    "Em breve" : {
+
+    },
+    "Enviar" : {
+
+    },
+    "Estratégia dos Pneus" : {
+
+    },
+    "Fornecedor de motores: **%@**" : {
+
+    },
+    "Fundação: **%@**" : {
+
+    },
+    "Gerando visão geral da sessão anterior..." : {
+
+    },
+    "Horário local" : {
+
+    },
+    "Início" : {
+
+    },
+    "Ler mais" : {
+
+    },
+    "Líder" : {
+
+    },
+    "Menu" : {
+
+    },
+    "Mostrar horário local" : {
+
+    },
+    "Mostrar menos" : {
+
+    },
+    "Nº %@" : {
+
+    },
+    "OK" : {
+
+    },
+    "Opções" : {
+
+    },
+    "País sede: **%@**" : {
+
+    },
+    "Pergunte ao Vrum" : {
+
+    },
+    "Pergunte sobre estratégia, pneus, desempenho, telemetria e tudo que acontece dentro e fora da pista." : {
+
+    },
+    "Pilotos" : {
+
+    },
+    "Pilotos citados" : {
+
+    },
+    "Practice" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Practice"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Treino Livre"
+          }
+        }
+      },
+      "shouldTranslate" : false
+    },
+    "Próxima Sessão" : {
+
+    },
+    "Resumo gerado pelo Sportcharts" : {
+
+    },
+    "Saiba mais" : {
+
+    },
+    "Saiba mais..." : {
+
+    },
+    "Sede: **%@**" : {
+
+    },
+    "Seguindo" : {
+
+    },
+    "Seguir" : {
+
+    },
+    "Sessões" : {
+
+    },
+    "Sobre a %@" : {
+
+    },
+    "Ver mais" : {
+
+    },
+    "Volta mais rápida" : {
+
+    }
+  },
+  "version" : "1.2"
+}
