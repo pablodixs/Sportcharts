@@ -11,7 +11,10 @@ struct HomeView: View {
 	@Environment(\.colorScheme) private var colorScheme
 
 	@State private var viewModel = SessionsViewModel()
+	@State private var briefViewModel = HomeBriefViewModel()
 	@State private var showNextSessionView = false
+	@State private var selectedHomeQuestion: String?
+	@State private var isSessionChatPresented = false
 
 	var body: some View {
 		NavigationStack {
@@ -41,6 +44,10 @@ struct HomeView: View {
 					.clipShape(RoundedRectangle(cornerRadius: 12))
 
 					if let session = viewModel.previousSession {
+						homeBriefView(session)
+					}
+
+					if let session = viewModel.previousSession {
 						DriversStandingView(sessionKey: session.sessionKey)
 					}
 
@@ -48,24 +55,38 @@ struct HomeView: View {
 				}
 				.padding(.horizontal)
 			}
-			.toolbar {
-				ToolbarItem(placement: .title) {
-					Image(.logo)
-						.resizable()
+				.toolbar {
+					ToolbarItem(placement: .title) {
+						Image(.logo)
+							.resizable()
 						.scaledToFit()
 						.frame(width: 96)
-						.padding(8)
+							.padding(8)
+					}
 				}
-			}
-			.task {
-				await viewModel.loadSessionsByYear(year: 2026)
+				.task {
+					await viewModel.loadSessionsByYear(year: 2026)
 
-				withAnimation {
-					showNextSessionView = true
+					withAnimation {
+						showNextSessionView = true
+					}
+
+					await loadHomeBriefIfNeeded()
+				}
+				.onChange(of: viewModel.previousSession?.sessionKey) { _, _ in
+					Task {
+						await loadHomeBriefIfNeeded()
+					}
+				}
+				.sheet(isPresented: $isSessionChatPresented) {
+					SessionChatSheet(
+						sessionContext: briefViewModel.sessionContext,
+						smartQuestions: briefViewModel.brief?.smartQuestions ?? [],
+						initialQuestion: selectedHomeQuestion
+					)
 				}
 			}
 		}
-	}
 
 	@ViewBuilder
 	private func vrumOverviewView() -> some View {
@@ -86,6 +107,122 @@ struct HomeView: View {
 		.padding(.bottom)
 		.font(.caption)
 		.fontWeight(.semibold)
+	}
+
+	@ViewBuilder
+	private func homeBriefView(_ session: Session) -> some View {
+		VStack(alignment: .leading, spacing: 14) {
+			HStack {
+				Label("Brief da última sessão", systemImage: "sparkles.2")
+					.font(.callout)
+					.fontWeight(.bold)
+					.foregroundStyle(.secondary)
+
+				Spacer()
+
+				Text(LocalizedStringKey(session.sessionType.uppercased()))
+					.font(.caption)
+					.fontWeight(.black)
+					.fontWidth(.condensed)
+					.padding(.vertical, 4)
+					.padding(.horizontal, 8)
+					.background(.secondary.opacity(0.12))
+					.clipShape(Capsule())
+			}
+
+			switch briefViewModel.state {
+			case .idle, .loading:
+				HStack(spacing: 10) {
+					ProgressView()
+					Text("Gerando leitura rápida...")
+						.font(.callout)
+						.fontWeight(.semibold)
+						.foregroundStyle(.secondary)
+				}
+				.frame(maxWidth: .infinity, alignment: .leading)
+				.task {
+					await loadHomeBriefIfNeeded()
+				}
+			case .empty:
+				Text("Ainda não há dados recentes suficientes para o brief.")
+					.font(.callout)
+					.foregroundStyle(.secondary)
+			case .failure:
+				Text("Não foi possível carregar o brief da última sessão.")
+					.font(.callout)
+					.foregroundStyle(.secondary)
+			case .success:
+				if let brief = briefViewModel.brief {
+					VStack(alignment: .leading, spacing: 10) {
+						Text(brief.headline)
+							.font(.title3)
+							.fontWeight(.black)
+							.fontWidth(.condensed)
+
+						Text(brief.summary)
+							.font(.callout)
+							.foregroundStyle(.secondary)
+
+						VStack(alignment: .leading, spacing: 8) {
+							ForEach(Array(brief.highlights.prefix(3)), id: \.self) { highlight in
+								Label(highlight, systemImage: "checkmark.circle.fill")
+									.font(.caption)
+									.foregroundStyle(.secondary)
+							}
+						}
+
+						if !brief.smartQuestions.isEmpty {
+							smartQuestionsView(brief.smartQuestions)
+						}
+					}
+				}
+			}
+		}
+		.frame(maxWidth: .infinity, alignment: .leading)
+		.padding()
+		.background(.quinary)
+		.clipShape(RoundedRectangle(cornerRadius: 12))
+	}
+
+	@ViewBuilder
+	private func smartQuestionsView(_ questions: [String]) -> some View {
+		VStack(alignment: .leading, spacing: 8) {
+			Text("Smart Questions da semana")
+				.font(.caption)
+				.fontWeight(.bold)
+				.foregroundStyle(.secondary)
+
+			ForEach(Array(questions.prefix(3)), id: \.self) { question in
+				Button {
+					selectedHomeQuestion = question
+					isSessionChatPresented = true
+				} label: {
+					HStack(spacing: 8) {
+						Image(systemName: "tire")
+						Text(question)
+							.frame(maxWidth: .infinity, alignment: .leading)
+						Image(systemName: "arrow.up.right")
+							.font(.caption2)
+							.foregroundStyle(.secondary)
+					}
+					.font(.caption)
+					.fontWeight(.semibold)
+					.padding(.vertical, 8)
+					.padding(.horizontal, 10)
+					.background(Color.secondary.opacity(0.10))
+					.clipShape(RoundedRectangle(cornerRadius: 8))
+				}
+				.buttonStyle(.plain)
+			}
+		}
+	}
+
+	private func loadHomeBriefIfNeeded() async {
+		guard let session = viewModel.previousSession else {
+			return
+		}
+
+		await briefViewModel.loadBrief(for: session)
 	}
 
 	@ViewBuilder

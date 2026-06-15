@@ -39,10 +39,10 @@ struct AskDriverScreen: View {
 					} else {
 						ScrollView {
 							LazyVStack(spacing: 12) {
-								
-								
+
+
 								ForEach(viewModel.messages) { message in
-									
+
 									MessageBubble(
 										message: message,
 										accent: driver?.teamColors.primary ?? .blue
@@ -55,13 +55,13 @@ struct AskDriverScreen: View {
 						}
 						.defaultScrollAnchor(.top)
 						.onChange(of: viewModel.messages) {
-							
+
 							guard let last = viewModel.messages.last else {
 								return
 							}
-							
+
 							withAnimation(.smooth) {
-								
+
 								proxy.scrollTo(
 									last.id,
 									anchor: .bottom
@@ -70,52 +70,56 @@ struct AskDriverScreen: View {
 						}
 					}
 				}
-			}
-			.safeAreaBar(edge: .bottom) {
-				GlassEffectContainer {
-					HStack {
-						TextField(
-							"Pergunte ao Vrum",
-							text: $viewModel.input
-						)
-						.focused($isFocused)
-						.scrollDismissesKeyboard(.automatic)
-						.padding()
-						.foregroundStyle(.foreground)
-						.clipShape(Capsule())
-						.glassEffect(.regular.interactive(), in: .capsule)
-						
-						Button {
-							isFocused = false
-							Task {
-								await viewModel.sendMessage(
-									driver: driver
+				}
+				.safeAreaBar(edge: .bottom) {
+					GlassEffectContainer {
+						VStack(alignment: .leading, spacing: 8) {
+							DriverMentionSuggestionsView(text: $viewModel.input)
+
+							HStack {
+								TextField(
+									"Pergunte ao Vrum",
+									text: $viewModel.input
 								)
-							}
-						} label: {
-							if viewModel.isResponding {
-								ProgressView()
-							} else {
-								Label("Enviar", systemImage: "arrow.up")
+								.focused($isFocused)
+								.scrollDismissesKeyboard(.automatic)
+								.padding()
+								.foregroundStyle(.foreground)
+								.clipShape(Capsule())
+								.glassEffect(.regular.interactive(), in: .capsule)
+
+								Button {
+									isFocused = false
+									Task {
+										await viewModel.sendMessage(
+											driver: driver
+										)
+									}
+								} label: {
+									if viewModel.isResponding {
+										ProgressView()
+									} else {
+										Label("Enviar", systemImage: "arrow.up")
+									}
+								}
+								.disabled(
+									viewModel.input.isEmpty || viewModel.isResponding
+								)
+								.padding(16)
+								.labelStyle(.iconOnly)
+								.background(
+									driver?.teamColors.accent ?? .accent
+								)
+								.foregroundStyle(
+									driver?.teamColors.secondary ?? .accent
+								)
+								.clipShape(Circle())
+								.glassEffect(.regular.interactive(), in: .circle)
+								.bold()
 							}
 						}
-						.disabled(
-							viewModel.input.isEmpty || viewModel.isResponding
-						)
-						.padding(16)
-						.labelStyle(.iconOnly)
-						.background(
-							driver?.teamColors.accent ?? .accent
-						)
-						.foregroundStyle(
-							driver?.teamColors.secondary ?? .accent
-						)
-						.clipShape(Circle())
-						.glassEffect(.regular.interactive(), in: .circle)
-						.bold()
 					}
-				}
-				.padding(.horizontal)
+					.padding(.horizontal)
 				.padding(.bottom, 8)
 			}
 			.toolbar {
@@ -150,13 +154,13 @@ struct AskDriverScreen: View {
 							.bold()
 						}
 					}				}
-				
+
 				ToolbarItem(placement: .cancellationAction) {
 					Button(role: .close) {
 						dismiss()
 					}
 				}
-				
+
 				ToolbarItem(placement: .automatic) {
 					Menu("Menu", systemImage: "ellipsis") {
 						Button("Saiba mais...", systemImage: "questionmark.circle") {}

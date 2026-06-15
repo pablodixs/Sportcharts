@@ -65,6 +65,9 @@
     "A OpenF1 ainda não retornou resultados recentes suficientes para montar um brief confiável deste piloto." : {
 
     },
+    "Ainda não há dados recentes suficientes para o brief." : {
+
+    },
     "Ainda não há dados recentes suficientes para um brief." : {
 
     },
@@ -90,6 +93,9 @@
 
     },
     "Brief" : {
+
+    },
+    "Brief da última sessão" : {
 
     },
     "Brief de performance" : {
@@ -128,6 +134,9 @@
     "Fundação: **%@**" : {
 
     },
+    "Gerando leitura rápida..." : {
+
+    },
     "Gerando visão geral da sessão anterior..." : {
 
     },
@@ -158,6 +167,9 @@
     "Mostrar menos" : {
 
     },
+    "Não foi possível carregar o brief da última sessão." : {
+
+    },
     "Não foi possível carregar os dados recentes agora." : {
 
     },
@@ -183,9 +195,6 @@
 
     },
     "Pilotos" : {
-
-    },
-    "Pilotos citados" : {
 
     },
     "Practice" : {
@@ -228,6 +237,9 @@
 
     },
     "Sessões" : {
+
+    },
+    "Smart Questions da semana" : {
 
     },
     "Sobre a %@" : {

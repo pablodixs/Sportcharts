@@ -14,6 +14,7 @@ struct SessionsScreen: View {
 
 	@State private var localTime: Bool = false
 	@State private var selectedMeeting: MeetingGroup?
+	@State private var didScrollToCurrentSession = false
 
 	var body: some View {
 		NavigationStack {
@@ -52,25 +53,26 @@ struct SessionsScreen: View {
 								meeting in
 								MeetingCardView(
 									meeting: meeting,
-									useTrackTime: localTime
+									useTrackTime: localTime,
+									currentSessionID: viewModel.currentSessionID
 								)
 								.onTapGesture {
 									selectedMeeting = meeting
 								}
 							}
 						}
+						.onAppear {
+							scrollToCurrentSession(
+								with: proxy,
+								animated: false
+							)
+						}
 						.onChange(of: viewModel.state) { _, newState in
-							guard newState == .success,
-								let targetID = viewModel.currentMeetingID
-							else { return }
-
-							DispatchQueue.main.asyncAfter(
-								deadline: .now() + 0.1
-							) {
-								withAnimation(.easeInOut) {
-									proxy.scrollTo(targetID, anchor: .center)
-								}
+							guard newState == .success else {
+								return
 							}
+
+							scrollToCurrentSession(with: proxy)
 						}
 						.contentMargins(.horizontal, 16)
 					}
@@ -117,9 +119,34 @@ struct SessionsScreen: View {
 				await viewModel.loadSessionsByYear(year: year)
 			}
 			.onChange(of: year) {
+				didScrollToCurrentSession = false
+
 				Task {
 					await viewModel.loadSessionsByYear(year: year)
 				}
+			}
+		}
+	}
+
+	private func scrollToCurrentSession(
+		with proxy: ScrollViewProxy,
+		animated: Bool = true
+	) {
+		guard !didScrollToCurrentSession,
+			  let targetID = viewModel.currentSessionID
+		else {
+			return
+		}
+
+		didScrollToCurrentSession = true
+
+		DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+			if animated {
+				withAnimation(.easeInOut) {
+					proxy.scrollTo(targetID, anchor: .center)
+				}
+			} else {
+				proxy.scrollTo(targetID, anchor: .center)
 			}
 		}
 	}
@@ -128,6 +155,7 @@ struct SessionsScreen: View {
 struct MeetingCardView: View {
 	let meeting: MeetingGroup
 	var useTrackTime: Bool = false
+	var currentSessionID: Int?
 
 	var body: some View {
 		VStack(alignment: .leading) {
@@ -177,6 +205,13 @@ struct MeetingCardView: View {
 					.font(.subheadline)
 					.padding(.vertical, 8)
 					.opacity(session.isFuture ? 1 : 0.85)
+				}
+				.id(session.sessionKey)
+				.background {
+					if session.sessionKey == currentSessionID {
+						RoundedRectangle(cornerRadius: 10)
+							.fill(.primary.opacity(0.06))
+					}
 				}
 			}
 		}

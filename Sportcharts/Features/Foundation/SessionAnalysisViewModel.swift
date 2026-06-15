@@ -28,7 +28,7 @@ final class SessionAnalysisViewModel: ObservableObject {
 	Responda em português do Brasil.
 	Seja claro, objetivo e específico com base no contexto da sessão.
 	"""
-	
+
 	func startSessionAnalysis(sessionContext: String) async {
 		let trimmedContext = sessionContext.trimmingCharacters(
 			in: .whitespacesAndNewlines
@@ -52,7 +52,7 @@ final class SessionAnalysisViewModel: ObservableObject {
 		messages = []
 		pilots = []
 		smartQuestions = []
-		
+
 		defer { isResponding = false }
 
 		let compactPrimary = compactSessionContext(
@@ -103,11 +103,12 @@ final class SessionAnalysisViewModel: ObservableObject {
 
 		let response = try await session.respond(
 			to: """
-			Analise esta sessão com base no contexto resumido abaixo.
-			Use apenas as informações fornecidas.
-			Em driverNumbers, inclua somente números de carros que aparecem no contexto.
+				Analise esta sessão com base no contexto resumido abaixo.
+				Use apenas as informações fornecidas.
+				Quando citar um piloto pela primeira vez no texto, use o nome completo exatamente como aparece no contexto.
+				Em driverNumbers, inclua somente números de carros que aparecem no contexto.
 
-			\(context)
+				\(context)
 			""",
 			generating: SessionAnalysis.self
 		)
@@ -224,28 +225,28 @@ final class SessionAnalysisViewModel: ObservableObject {
 		if blocks.count > selectedBlocks.count {
 			compact += "\n... \(blocks.count - selectedBlocks.count) resultados omitidos para caber no contexto."
 		}
-		
+
 		if let additionalContext {
 			compact += "\n\n\(additionalContext)"
 		}
 
 		return hardLimit(compact, maxLength: maxLength)
 	}
-	
+
 	private func extractAdditionalContext(_ resultsText: String) -> String? {
 		let marker = "Contexto adicional leve da OpenF1:"
-		
+
 		guard let range = resultsText.range(of: marker) else {
 			return nil
 		}
-		
+
 		let context = resultsText[range.lowerBound...]
 			.trimmingCharacters(in: .whitespacesAndNewlines)
-		
+
 		guard !context.isEmpty else {
 			return nil
 		}
-		
+
 		return hardLimit(context, maxLength: 1_800)
 	}
 
@@ -317,11 +318,11 @@ final class SessionAnalysisViewModel: ObservableObject {
 		sanitized.storyline = cleanSentence(analysis.storyline)
 		sanitized.keyMoment = cleanSentence(analysis.keyMoment)
 		sanitized.nextAction = cleanSentence(analysis.nextAction)
-		
+
 		if sanitized.storyline.isEmpty {
 			sanitized.storyline = sanitized.summary
 		}
-		
+
 		if sanitized.keyMoment.isEmpty {
 			sanitized.keyMoment = "O resultado final e os gaps foram os principais sinais da sessão."
 		}
@@ -335,22 +336,22 @@ final class SessionAnalysisViewModel: ObservableObject {
 			analysis.improvements,
 			emptyFallback: "Nenhum ponto de melhoria informado"
 		)
-		
+
 		sanitized.smartQuestions = sanitizedList(
 			analysis.smartQuestions,
 			emptyFallback: "O que decidiu esta sessão?"
 		)
-		
+
 		if sanitized.smartQuestions.count > 3 {
 			sanitized.smartQuestions = Array(sanitized.smartQuestions.prefix(3))
 		}
-		
+
 		let fallbackQuestions = [
 			"O que decidiu esta sessão?",
 			"Quem superou mais as expectativas?",
 			"Qual é o principal ponto de atenção para a próxima sessão?",
 		]
-		
+
 		for question in fallbackQuestions where sanitized.smartQuestions.count < 3 {
 			if !sanitized.smartQuestions.contains(where: {
 				$0.caseInsensitiveCompare(question) == .orderedSame
@@ -402,7 +403,7 @@ final class SessionAnalysisViewModel: ObservableObject {
 			.replacingOccurrences(of: "  ", with: " ")
 			.trimmingCharacters(in: .whitespacesAndNewlines)
 	}
-	
+
 	private func render(_ analysis: SessionAnalysis) -> String {
 		let positives = analysis.positives
 			.map { "- \($0)" }
@@ -411,7 +412,7 @@ final class SessionAnalysisViewModel: ObservableObject {
 		let improvements = analysis.improvements
 			.map { "- \($0)" }
 			.joined(separator: "\n")
-		
+
 		return """
 ## Storyline
 \(analysis.storyline)
@@ -493,7 +494,7 @@ private extension SessionAnalysisViewModel {
 			results.first(where: { $0.position == 3 })?.driverNumber
 		] + classified.incidents.prefix(3).map(\.driverNumber))
 			.compactMap { $0 }
-		
+
 		let storyline = fallbackStoryline(
 			winner: winner,
 			podium: podium
@@ -516,7 +517,7 @@ private extension SessionAnalysisViewModel {
 			)
 		)
 	}
-	
+
 	func fallbackStoryline(
 		winner: ResultSummary?,
 		podium: String
@@ -524,11 +525,11 @@ private extension SessionAnalysisViewModel {
 		guard let winner else {
 			return "A sessão ainda não tem dados suficientes para uma storyline confiável."
 		}
-		
+
 		let podiumText = podium.isEmpty ? "com o restante do pódio indefinido" : "à frente de \(podium)"
 		return "\(winner.driverName) marcou a narrativa da sessão \(podiumText)."
 	}
-	
+
 	func fallbackKeyMoment(
 		winner: ResultSummary?,
 		incidents: [ResultSummary]
@@ -536,11 +537,11 @@ private extension SessionAnalysisViewModel {
 		if let incident = incidents.first {
 			return "O status \(incident.status) de \(incident.driverName) foi o principal ponto de atenção do resultado."
 		}
-		
+
 		if let winner {
 			return "A liderança de \(winner.driverName) e o gap final orientam a leitura da sessão."
 		}
-		
+
 		return "Os resultados disponíveis ainda não indicam um momento-chave claro."
 	}
 

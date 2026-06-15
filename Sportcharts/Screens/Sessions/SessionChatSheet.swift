@@ -12,24 +12,27 @@ struct SessionChatSheet: View {
 
 	let sessionContext: String
 	let smartQuestions: [String]
+	let initialQuestion: String?
 	let previousContext: String? = nil
 
 	@State private var viewModel = ChatViewModel()
 	@State private var screenLoaded = false
-	
+
 	init(
 		sessionContext: String,
-		smartQuestions: [String] = []
+		smartQuestions: [String] = [],
+		initialQuestion: String? = nil
 	) {
 		self.sessionContext = sessionContext
 		self.smartQuestions = smartQuestions
+		self.initialQuestion = initialQuestion
 	}
-	
+
 	private var displayedSmartQuestions: [String] {
 		let questions = smartQuestions.isEmpty
 			? SessionSmartQuestionBuilder.questions(from: sessionContext)
 			: smartQuestions
-		
+
 		return Array(questions.prefix(3))
 	}
 
@@ -86,11 +89,15 @@ struct SessionChatSheet: View {
 				.padding(.horizontal)
 				.padding(.bottom)
 			}
-			.onAppear {
-				viewModel.sessionContext = sessionContext
-				
-				DispatchQueue.main.async {
-					screenLoaded = true
+				.onAppear {
+					viewModel.sessionContext = sessionContext
+					if let initialQuestion,
+					   viewModel.input.isEmpty {
+						viewModel.input = initialQuestion
+					}
+
+					DispatchQueue.main.async {
+						screenLoaded = true
 				}
 			}
 			.toolbar {
@@ -107,35 +114,39 @@ struct SessionChatSheet: View {
 						dismiss()
 					}
 				}
-			}
-			.safeAreaBar(edge: .bottom) {
-				HStack {
-					TextField("Pergunte ao Vrum", text: $viewModel.input)
-					Button {
-						Task {
-							await viewModel.sendSessionMessage()
-						}
-					} label: {
-						if viewModel.isResponding {
-							ProgressView()
-						} else {
-							Label("Enviar", systemImage: "arrow.up")
-								.labelStyle(.iconOnly)
-								.bold()
-						}
-					}
-					.disabled(viewModel.isResponding || viewModel.input.count < 3)
-					.transition(.blurReplace)
-					.padding(8)
-					.background(.primary)
-					.foregroundStyle(.foreground)
-					.clipShape(Circle())
 				}
-				.padding(8)
-				.padding(.leading, 12)
-				.glassEffect(.regular.interactive(), in: .capsule)
-				.padding(.horizontal)
-			}
+				.safeAreaBar(edge: .bottom) {
+					VStack(alignment: .leading, spacing: 8) {
+						DriverMentionSuggestionsView(text: $viewModel.input)
+
+						HStack {
+							TextField("Pergunte ao Vrum", text: $viewModel.input)
+							Button {
+								Task {
+									await viewModel.sendSessionMessage()
+								}
+							} label: {
+								if viewModel.isResponding {
+									ProgressView()
+								} else {
+									Label("Enviar", systemImage: "arrow.up")
+										.labelStyle(.iconOnly)
+										.bold()
+								}
+							}
+							.disabled(viewModel.isResponding || viewModel.input.count < 3)
+							.transition(.blurReplace)
+							.padding(8)
+							.background(.primary)
+							.foregroundStyle(.foreground)
+							.clipShape(Circle())
+						}
+						.padding(8)
+						.padding(.leading, 12)
+						.glassEffect(.regular.interactive(), in: .capsule)
+					}
+					.padding(.horizontal)
+				}
 		}
 	}
 }
