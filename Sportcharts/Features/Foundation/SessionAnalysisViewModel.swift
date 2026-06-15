@@ -15,6 +15,7 @@ final class SessionAnalysisViewModel: ObservableObject {
 	@Published var messages: [ChatMessage] = []
 	@Published var pilots: [F1Driver] = []
 	@Published var analysisText: String = ""
+	@Published var smartQuestions: [String] = []
 
 	private let maxPrimaryContextLength = 6_000
 	private let maxFallbackContextLength = 3_200
@@ -35,6 +36,7 @@ final class SessionAnalysisViewModel: ObservableObject {
 
 		guard !trimmedContext.isEmpty else {
 			analysisText = ""
+			smartQuestions = []
 			messages = [
 				ChatMessage(
 					role: .assistant,
@@ -49,6 +51,7 @@ final class SessionAnalysisViewModel: ObservableObject {
 		analysisText = ""
 		messages = []
 		pilots = []
+		smartQuestions = []
 		
 		defer { isResponding = false }
 
@@ -114,6 +117,7 @@ final class SessionAnalysisViewModel: ObservableObject {
 
 		await publishAnalysis(
 			rendered,
+			smartQuestions: sanitized.smartQuestions,
 			pilots: resolvedPilots(from: sanitized.driverNumbers)
 		)
 	}
@@ -131,6 +135,7 @@ final class SessionAnalysisViewModel: ObservableObject {
 		await publishAnalysis(
 			displayed,
 			copyableText: rendered,
+			smartQuestions: analysis.smartQuestions,
 			pilots: resolvedPilots(from: analysis.driverNumbers)
 		)
 	}
@@ -138,6 +143,7 @@ final class SessionAnalysisViewModel: ObservableObject {
 	private func publishAnalysis(
 		_ displayedText: String,
 		copyableText: String? = nil,
+		smartQuestions resolvedSmartQuestions: [String],
 		pilots resolvedPilots: [F1Driver]
 	) async {
 		let assistantMessage = ChatMessage(
@@ -149,6 +155,7 @@ final class SessionAnalysisViewModel: ObservableObject {
 		analysisText = copyableText ?? displayedText
 		messages = [assistantMessage]
 		pilots = resolvedPilots
+		smartQuestions = resolvedSmartQuestions
 
 		for character in displayedText {
 			if Task.isCancelled { return }
@@ -192,6 +199,7 @@ final class SessionAnalysisViewModel: ObservableObject {
 
 		let header = cleaned[..<resultsRange.lowerBound]
 		let resultsText = cleaned[resultsRange.upperBound...]
+		let additionalContext = extractAdditionalContext(String(resultsText))
 
 		let compactHeader = header
 			.split(separator: "\n")
@@ -216,8 +224,29 @@ final class SessionAnalysisViewModel: ObservableObject {
 		if blocks.count > selectedBlocks.count {
 			compact += "\n... \(blocks.count - selectedBlocks.count) resultados omitidos para caber no contexto."
 		}
+		
+		if let additionalContext {
+			compact += "\n\n\(additionalContext)"
+		}
 
 		return hardLimit(compact, maxLength: maxLength)
+	}
+	
+	private func extractAdditionalContext(_ resultsText: String) -> String? {
+		let marker = "Contexto adicional leve da OpenF1:"
+		
+		guard let range = resultsText.range(of: marker) else {
+			return nil
+		}
+		
+		let context = resultsText[range.lowerBound...]
+			.trimmingCharacters(in: .whitespacesAndNewlines)
+		
+		guard !context.isEmpty else {
+			return nil
+		}
+		
+		return hardLimit(context, maxLength: 1_800)
 	}
 
 	private func extractResultBlocks(_ resultsText: String) -> [String] {
@@ -285,7 +314,17 @@ final class SessionAnalysisViewModel: ObservableObject {
 	private func sanitize(_ analysis: SessionAnalysis) -> SessionAnalysis {
 		var sanitized = analysis
 		sanitized.summary = cleanSentence(analysis.summary)
+		sanitized.storyline = cleanSentence(analysis.storyline)
+		sanitized.keyMoment = cleanSentence(analysis.keyMoment)
 		sanitized.nextAction = cleanSentence(analysis.nextAction)
+		
+		if sanitized.storyline.isEmpty {
+			sanitized.storyline = sanitized.summary
+		}
+		
+		if sanitized.keyMoment.isEmpty {
+			sanitized.keyMoment = "O resultado final e os gaps foram os principais sinais da sessão."
+		}
 
 		sanitized.positives = sanitizedList(
 			analysis.positives,
@@ -296,6 +335,29 @@ final class SessionAnalysisViewModel: ObservableObject {
 			analysis.improvements,
 			emptyFallback: "Nenhum ponto de melhoria informado"
 		)
+		
+		sanitized.smartQuestions = sanitizedList(
+			analysis.smartQuestions,
+			emptyFallback: "O que decidiu esta sessão?"
+		)
+		
+		if sanitized.smartQuestions.count > 3 {
+			sanitized.smartQuestions = Array(sanitized.smartQuestions.prefix(3))
+		}
+		
+		let fallbackQuestions = [
+			"O que decidiu esta sessão?",
+			"Quem superou mais as expectativas?",
+			"Qual é o principal ponto de atenção para a próxima sessão?",
+		]
+		
+		for question in fallbackQuestions where sanitized.smartQuestions.count < 3 {
+			if !sanitized.smartQuestions.contains(where: {
+				$0.caseInsensitiveCompare(question) == .orderedSame
+			}) {
+				sanitized.smartQuestions.append(question)
+			}
+		}
 
 		sanitized.driverNumbers = uniqueDriverNumbers(analysis.driverNumbers)
 		return sanitized
@@ -351,6 +413,12 @@ final class SessionAnalysisViewModel: ObservableObject {
 			.joined(separator: "\n")
 		
 		return """
+## Storyline
+\(analysis.storyline)
+
+## Momento-chave
+\(analysis.keyMoment)
+
 ## Resumo
 \(analysis.summary)
 
@@ -425,16 +493,55 @@ private extension SessionAnalysisViewModel {
 			results.first(where: { $0.position == 3 })?.driverNumber
 		] + classified.incidents.prefix(3).map(\.driverNumber))
 			.compactMap { $0 }
+		
+		let storyline = fallbackStoryline(
+			winner: winner,
+			podium: podium
+		)
+		let keyMoment = fallbackKeyMoment(
+			winner: winner,
+			incidents: classified.incidents
+		)
 
 		return sanitize(
 			SessionAnalysis(
 				summary: summary,
+				storyline: storyline,
+				keyMoment: keyMoment,
 				positives: positives,
 				improvements: improvements,
 				nextAction: "Revise os gaps e os abandonos antes de definir o foco da próxima sessão.",
+				smartQuestions: SessionSmartQuestionBuilder.questions(from: context),
 				driverNumbers: driverNumbers
 			)
 		)
+	}
+	
+	func fallbackStoryline(
+		winner: ResultSummary?,
+		podium: String
+	) -> String {
+		guard let winner else {
+			return "A sessão ainda não tem dados suficientes para uma storyline confiável."
+		}
+		
+		let podiumText = podium.isEmpty ? "com o restante do pódio indefinido" : "à frente de \(podium)"
+		return "\(winner.driverName) marcou a narrativa da sessão \(podiumText)."
+	}
+	
+	func fallbackKeyMoment(
+		winner: ResultSummary?,
+		incidents: [ResultSummary]
+	) -> String {
+		if let incident = incidents.first {
+			return "O status \(incident.status) de \(incident.driverName) foi o principal ponto de atenção do resultado."
+		}
+		
+		if let winner {
+			return "A liderança de \(winner.driverName) e o gap final orientam a leitura da sessão."
+		}
+		
+		return "Os resultados disponíveis ainda não indicam um momento-chave claro."
 	}
 
 	func fallbackSummary(

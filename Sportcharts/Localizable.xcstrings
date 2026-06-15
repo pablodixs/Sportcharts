@@ -10,6 +10,16 @@
     "#%lld" : {
 
     },
+    "#%lld • %@" : {
+      "localizations" : {
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "#%1$lld • %2$@"
+          }
+        }
+      }
+    },
     "%@" : {
 
     },
@@ -52,6 +62,12 @@
     "+%@ p." : {
 
     },
+    "A OpenF1 ainda não retornou resultados recentes suficientes para montar um brief confiável deste piloto." : {
+
+    },
+    "Ainda não há dados recentes suficientes para um brief." : {
+
+    },
     "Análise copiada" : {
 
     },
@@ -73,6 +89,12 @@
     "Bio" : {
 
     },
+    "Brief" : {
+
+    },
+    "Brief de performance" : {
+
+    },
     "Buscar" : {
 
     },
@@ -88,6 +110,9 @@
     "Copiar análise" : {
 
     },
+    "Dados recentes insuficientes" : {
+
+    },
     "DNF" : {
 
     },
@@ -95,9 +120,6 @@
 
     },
     "Enviar" : {
-
-    },
-    "Estratégia dos Pneus" : {
 
     },
     "Fornecedor de motores: **%@**" : {
@@ -115,6 +137,9 @@
     "Início" : {
 
     },
+    "Lendo dados recentes..." : {
+
+    },
     "Ler mais" : {
 
     },
@@ -124,10 +149,16 @@
     "Menu" : {
 
     },
+    "Montando brief de performance..." : {
+
+    },
     "Mostrar horário local" : {
 
     },
     "Mostrar menos" : {
+
+    },
+    "Não foi possível carregar os dados recentes agora." : {
 
     },
     "Nº %@" : {
@@ -140,6 +171,9 @@
 
     },
     "País sede: **%@**" : {
+
+    },
+    "Perguntar ao Vrum" : {
 
     },
     "Pergunte ao Vrum" : {
@@ -200,9 +234,6 @@
 
     },
     "Ver mais" : {
-
-    },
-    "Volta mais rápida" : {
 
     }
   },

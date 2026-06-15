@@ -11,6 +11,7 @@ struct LocalDriverDetail: View {
 	let driverNumber: Int
 
 	@State private var viewModel = ChatViewModel()
+	@State private var briefViewModel = DriverBriefViewModel()
 
 	@State private var driver: F1Driver? = nil
 	@State private var isFavourite: Bool = false
@@ -21,6 +22,7 @@ struct LocalDriverDetail: View {
 	@State private var askDialogOpen = false
 	@State private var showFullBio = false
 	@State private var isAskSheetOpen = false
+	@State private var isBriefSheetPresented = false
 
 	var isResponding = false
 
@@ -62,6 +64,10 @@ struct LocalDriverDetail: View {
 					statsGridView(driver)
 						.padding(.horizontal)
 						.padding(.top, 8)
+					
+					driverBriefCard(driver)
+						.padding(.horizontal)
+						.padding(.top, 16)
 
 					bioSectionView(driver)
 						.padding(.horizontal)
@@ -119,12 +125,28 @@ struct LocalDriverDetail: View {
 			AskDriverScreen(driver: driver)
 				.interactiveDismissDisabled()
 		}
+		.sheet(isPresented: $isBriefSheetPresented) {
+			if let driver {
+				DriverBriefSheet(
+					driver: driver,
+					brief: briefViewModel.brief,
+					state: briefViewModel.state
+				)
+			}
+		}
 		.onAppear {
 			driver = F1Grid2026.driver(byNumber: driverNumber)
 
 			withAnimation {
 				screenLoaded.toggle()
 			}
+		}
+		.task(id: driverNumber) {
+			guard let driver = F1Grid2026.driver(byNumber: driverNumber) else {
+				return
+			}
+			
+			await briefViewModel.loadBrief(for: driver)
 		}
 	}
 
@@ -317,6 +339,96 @@ struct LocalDriverDetail: View {
 		)
 		.clipShape(RoundedRectangle(cornerRadius: 12))
 	}
+	
+	@ViewBuilder
+	private func driverBriefCard(_ driver: F1Driver) -> some View {
+		Button {
+			isBriefSheetPresented = true
+		} label: {
+			VStack(alignment: .leading, spacing: 12) {
+				HStack(spacing: 8) {
+					Image(systemName: "chart.line.uptrend.xyaxis")
+						.font(.headline)
+					
+					Text("Brief de performance")
+						.font(.headline)
+						.fontWidth(.condensed)
+						.bold()
+					
+					Spacer()
+					
+					Image(systemName: "chevron.right")
+						.font(.caption)
+						.fontWeight(.bold)
+						.foregroundStyle(driver.teamColors.secondary.opacity(0.55))
+				}
+				
+				switch briefViewModel.state {
+				case .idle, .loading:
+					HStack(spacing: 10) {
+						ProgressView()
+						Text("Lendo dados recentes...")
+							.font(.subheadline)
+							.foregroundStyle(driver.teamColors.secondary.opacity(0.7))
+					}
+					.frame(maxWidth: .infinity, alignment: .leading)
+					.padding(.vertical, 8)
+					
+				case .success:
+					if let brief = briefViewModel.brief {
+						Text(brief.headline)
+							.font(.title3)
+							.fontWidth(.condensed)
+							.fontWeight(.heavy)
+							.multilineTextAlignment(.leading)
+							.frame(maxWidth: .infinity, alignment: .leading)
+						
+						VStack(alignment: .leading, spacing: 6) {
+							ForEach(Array(brief.strengths.prefix(2)), id: \.self) { item in
+								briefBullet(item, icon: "plus.circle.fill")
+							}
+							
+							if let watchout = brief.watchouts.first {
+								briefBullet(watchout, icon: "exclamationmark.circle.fill")
+							}
+						}
+					} else {
+						Text("Ainda não há dados recentes suficientes para um brief.")
+							.font(.subheadline)
+							.foregroundStyle(driver.teamColors.secondary.opacity(0.75))
+							.frame(maxWidth: .infinity, alignment: .leading)
+					}
+					
+				case .failure:
+					Text("Não foi possível carregar os dados recentes agora.")
+						.font(.subheadline)
+						.foregroundStyle(driver.teamColors.secondary.opacity(0.75))
+						.frame(maxWidth: .infinity, alignment: .leading)
+				}
+			}
+			.padding(14)
+			.foregroundStyle(driver.teamColors.secondary)
+			.background(driver.teamColors.secondary.opacity(0.08))
+			.clipShape(RoundedRectangle(cornerRadius: 12))
+		}
+		.buttonStyle(.plain)
+	}
+	
+	@ViewBuilder
+	private func briefBullet(_ text: String, icon: String) -> some View {
+		HStack(alignment: .top, spacing: 8) {
+			Image(systemName: icon)
+				.font(.caption)
+				.padding(.top, 2)
+			
+			Text(text)
+				.font(.caption)
+				.fontWeight(.semibold)
+				.lineLimit(2)
+				.frame(maxWidth: .infinity, alignment: .leading)
+		}
+		.foregroundStyle(driver?.teamColors.secondary.opacity(0.76) ?? .secondary)
+	}
 
 	@ViewBuilder
 	private func bioSectionView(_ driver: F1Driver) -> some View {
@@ -434,6 +546,169 @@ struct LocalDriverDetail: View {
 			.padding(.vertical, 8)
 			.background(driver?.teamColors.primary ?? Color.gray.opacity(0.1))
 			.clipShape(Capsule())
+		}
+	}
+}
+
+private struct DriverBriefSheet: View {
+	@Environment(\.dismiss) private var dismiss
+	
+	let driver: F1Driver
+	let brief: DriverBrief?
+	let state: DriverBriefViewModel.State
+	
+	var body: some View {
+		NavigationStack {
+			ScrollView {
+				VStack(alignment: .leading, spacing: 20) {
+					header
+					
+					switch state {
+					case .idle, .loading:
+						HStack(spacing: 12) {
+							ProgressView()
+							Text("Montando brief de performance...")
+								.font(.subheadline)
+								.foregroundStyle(.secondary)
+						}
+						.padding(.vertical, 24)
+						
+					case .success:
+						if let brief {
+							briefContent(brief)
+						} else {
+							emptyState
+						}
+						
+					case .failure:
+						Text("Não foi possível carregar os dados recentes agora.")
+							.font(.subheadline)
+							.foregroundStyle(.secondary)
+					}
+				}
+				.padding()
+			}
+			.background(driver.teamColors.primary.ignoresSafeArea())
+			.foregroundStyle(driver.teamColors.secondary)
+			.navigationTitle("Brief")
+			.navigationBarTitleDisplayMode(.inline)
+			.toolbar {
+				ToolbarItem(placement: .cancellationAction) {
+					Button(role: .close) {
+						dismiss()
+					}
+				}
+			}
+		}
+	}
+	
+	private var header: some View {
+		HStack(spacing: 12) {
+			AsyncImage(url: driver.imageURL) { phase in
+				switch phase {
+				case .success(let image):
+					image
+						.resizable()
+						.aspectRatio(contentMode: .fill)
+						.padding(.top, 100)
+						.frame(width: 54, height: 54)
+						.background(driver.teamColors.primary)
+						.clipShape(Circle())
+				default:
+					Image(systemName: "person.fill")
+						.frame(width: 54, height: 54)
+						.background(driver.teamColors.secondary.opacity(0.12))
+						.clipShape(Circle())
+				}
+			}
+			
+			VStack(alignment: .leading, spacing: 2) {
+				Text(driver.fullName)
+					.font(.title3)
+					.fontWidth(.condensed)
+					.bold()
+				
+				Text("#\(driver.number) • \(driver.team.rawValue)")
+					.font(.caption)
+					.foregroundStyle(driver.teamColors.secondary.opacity(0.7))
+			}
+			
+			Spacer()
+		}
+	}
+	
+	@ViewBuilder
+	private func briefContent(_ brief: DriverBrief) -> some View {
+		VStack(alignment: .leading, spacing: 8) {
+			Text(brief.headline)
+				.font(.largeTitle)
+				.fontWidth(.condensed)
+				.fontWeight(.heavy)
+				.lineLimit(3)
+			
+			Text(brief.formSummary)
+				.font(.subheadline)
+				.foregroundStyle(driver.teamColors.secondary.opacity(0.78))
+		}
+		
+		briefSection(
+			title: "Pontos fortes",
+			icon: "plus.circle.fill",
+			items: brief.strengths
+		)
+		
+		briefSection(
+			title: "Pontos de atenção",
+			icon: "exclamationmark.circle.fill",
+			items: brief.watchouts
+		)
+	}
+	
+	private var emptyState: some View {
+		VStack(alignment: .leading, spacing: 8) {
+			Text("Dados recentes insuficientes")
+				.font(.title2)
+				.fontWidth(.condensed)
+				.bold()
+			
+			Text("A OpenF1 ainda não retornou resultados recentes suficientes para montar um brief confiável deste piloto.")
+				.font(.subheadline)
+				.foregroundStyle(driver.teamColors.secondary.opacity(0.75))
+		}
+	}
+	
+	@ViewBuilder
+	private func briefSection(
+		title: String,
+		icon: String,
+		items: [String]
+	) -> some View {
+		if !items.isEmpty {
+			VStack(alignment: .leading, spacing: 10) {
+				Label(title, systemImage: icon)
+					.font(.headline)
+					.fontWidth(.condensed)
+					.bold()
+				
+				VStack(alignment: .leading, spacing: 8) {
+					ForEach(items, id: \.self) { item in
+						HStack(alignment: .top, spacing: 8) {
+							Circle()
+								.frame(width: 5, height: 5)
+								.padding(.top, 7)
+							
+							Text(item)
+								.font(.subheadline)
+								.frame(maxWidth: .infinity, alignment: .leading)
+						}
+						.foregroundStyle(driver.teamColors.secondary.opacity(0.78))
+					}
+				}
+			}
+			.padding(14)
+			.frame(maxWidth: .infinity, alignment: .leading)
+			.background(driver.teamColors.secondary.opacity(0.08))
+			.clipShape(RoundedRectangle(cornerRadius: 12))
 		}
 	}
 }

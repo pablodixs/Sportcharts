@@ -24,7 +24,7 @@ enum OpenF1Endpoint: OpenF1Requestable {
 	case raceControl(sessionKey: Int)
 	case meetings(year: Int? = nil)
 	case sessionResult(sessionKey: Int)
-	case driversStandings(sessionKey: Int)
+	case driversStandings(sessionKey: Int, driverNumber: Int? = nil)
 
 	var path: String {
 		switch self {
@@ -90,8 +90,11 @@ enum OpenF1Endpoint: OpenF1Requestable {
 			return build(("year", year))
 		case .sessionResult(let sessionKey):
 			return build(("session_key", sessionKey))
-		case .driversStandings(let sessionKey):
-			return build(("session_key", sessionKey))
+		case .driversStandings(let sessionKey, let driverNumber):
+			return build(
+				("session_key", sessionKey),
+				("driver_number", driverNumber)
+			)
 		}
 	}
 

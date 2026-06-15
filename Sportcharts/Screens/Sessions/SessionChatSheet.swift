@@ -11,10 +11,27 @@ struct SessionChatSheet: View {
 	@Environment(\.dismiss) var dismiss
 
 	let sessionContext: String
+	let smartQuestions: [String]
 	let previousContext: String? = nil
 
 	@State private var viewModel = ChatViewModel()
 	@State private var screenLoaded = false
+	
+	init(
+		sessionContext: String,
+		smartQuestions: [String] = []
+	) {
+		self.sessionContext = sessionContext
+		self.smartQuestions = smartQuestions
+	}
+	
+	private var displayedSmartQuestions: [String] {
+		let questions = smartQuestions.isEmpty
+			? SessionSmartQuestionBuilder.questions(from: sessionContext)
+			: smartQuestions
+		
+		return Array(questions.prefix(3))
+	}
 
 	var body: some View {
 		NavigationStack {
@@ -33,38 +50,28 @@ struct SessionChatSheet: View {
 								.font(.system(size: 46))
 								.fontWeight(.black)
 
-							VStack(spacing: 16) {
-								Button {
-									viewModel.input = "Qual foi a estratégia dos pneus?"
-									Task {
-										await viewModel.sendSessionMessage()
+							VStack(spacing: 12) {
+								ForEach(
+									Array(displayedSmartQuestions.enumerated()),
+									id: \.offset
+								) { index, question in
+									Button {
+										viewModel.input = question
+										Task {
+											await viewModel.sendSessionMessage()
+										}
+									} label: {
+										Text(question)
+											.padding(4)
+											.multilineTextAlignment(.center)
 									}
-								} label: {
-									Text("Estratégia dos Pneus")
-										.padding(4)
+									.offset(y: screenLoaded ? 0 : 64)
+									.opacity(screenLoaded ? 1 : 0)
+									.animation(
+										.spring().delay(0.25 + Double(index) * 0.16),
+										value: screenLoaded
+									)
 								}
-								.offset(y: screenLoaded ? 0 : 64)
-								.opacity(screenLoaded ? 1 : 0)
-								.animation(
-									.spring().delay(0.25),
-									value: screenLoaded
-								)
-
-								Button {
-									viewModel.input = "De quem foi a volta mais rápida?"
-									Task {
-										await viewModel.sendSessionMessage()
-									}
-								} label: {
-									Text("Volta mais rápida")
-										.padding(4)
-								}
-								.offset(y: screenLoaded ? 0 : 64)
-								.opacity(screenLoaded ? 1 : 0)
-								.animation(
-									.spring().delay(0.45),
-									value: screenLoaded
-								)
 							}
 							.bold()
 							.buttonStyle(.glass)
@@ -80,6 +87,8 @@ struct SessionChatSheet: View {
 				.padding(.bottom)
 			}
 			.onAppear {
+				viewModel.sessionContext = sessionContext
+				
 				DispatchQueue.main.async {
 					screenLoaded = true
 				}

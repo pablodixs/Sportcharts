@@ -28,6 +28,8 @@ final class ChatViewModel {
 	var isResponding = false
 	
 	private let service = OllamaService()
+	private let openF1Service = OpenF1Service()
+	private var driverContextCache: [Int: String] = [:]
 	private let maxHistoryMessages = 8
 	private let streamingDelayNanoseconds: UInt64 = 8_000_000
 	
@@ -87,7 +89,8 @@ final class ChatViewModel {
 			
 			let response = try await requestDriverResponse(
 				userMessage: trimmedInput,
-				driver: driver
+				driver: driver,
+				apiContext: await recentDriverContext(for: driver)
 			)
 			
 			for character in response {
@@ -214,10 +217,14 @@ final class ChatViewModel {
 extension ChatViewModel {
 	private func requestDriverResponse(
 		userMessage: String,
-		driver: F1Driver?
+		driver: F1Driver?,
+		apiContext: String
 	) async throws -> String {
 		let session = LanguageModelSession(
-			instructions: buildDriverInstructions(driver: driver)
+			instructions: buildDriverInstructions(
+				driver: driver,
+				apiContext: apiContext
+			)
 		)
 		
 		let response = try await session.respond(
@@ -262,7 +269,10 @@ extension ChatViewModel {
 		"""
 	}
 	
-	private func buildDriverInstructions(driver: F1Driver?) -> String {
+	private func buildDriverInstructions(
+		driver: F1Driver?,
+		apiContext: String
+	) -> String {
 		let driverContext: String
 		
 		if let driver {
@@ -281,6 +291,10 @@ extension ChatViewModel {
 			driverContext = ""
 		}
 		
+		let apiContextText = apiContext.isEmpty
+			? ""
+			: "\n\n\(apiContext)"
+		
 		return """
 		Você é Vrum, um analista técnico e engenheiro de Fórmula 1.
 		Responda em português do Brasil.
@@ -291,7 +305,58 @@ extension ChatViewModel {
 		Não reafirme seu papel ao usuário.
 		Foque em precisão técnica sobre estratégia, pneus, qualifying, corrida, DRS, undercut, overcut, telemetria, degradação, race pace e pilotagem.
 		\(driverContext)
+		\(apiContextText)
 		"""
+	}
+	
+	private func recentDriverContext(for driver: F1Driver?) async -> String {
+		guard let driver else {
+			return ""
+		}
+		
+		if let cached = driverContextCache[driver.number] {
+			return cached
+		}
+		
+		let year = Calendar.current.component(.year, from: .now)
+		guard let sessions = try? await openF1Service.fetchSessionsByYear(year: year) else {
+			return ""
+		}
+		
+		let completed = sessions
+			.filter { !$0.isFuture && !$0.isCancelled }
+			.sorted { $0.dateStart > $1.dateStart }
+		
+		var driverResults: [(Session, SessionResult)] = []
+		
+		for session in completed.prefix(8) {
+			guard driverResults.count < 4 else {
+				break
+			}
+			
+			guard
+				let results = try? await openF1Service.fetchSessionResult(
+					sessionKey: session.sessionKey
+				),
+				let result = results.first(where: {
+					$0.driverNumber == driver.number
+				})
+			else {
+				continue
+			}
+			
+			driverResults.append((session, result))
+		}
+		
+		let context = OpenF1ContextBuilder.recentDriverResults(
+			driver: driver,
+			sessions: sessions,
+			resultsBySession: driverResults
+		)
+		
+		driverContextCache[driver.number] = context
+		
+		return context
 	}
 }
 

@@ -17,6 +17,18 @@ struct SessionAnalysis {
 	
 	@Guide(
 		description:
+			"Storyline principal da sessão em português do Brasil, em uma frase curta e específica"
+	)
+	var storyline: String
+	
+	@Guide(
+		description:
+			"Momento ou fator decisivo da sessão em uma frase curta, usando apenas dados fornecidos"
+	)
+	var keyMoment: String
+	
+	@Guide(
+		description:
 			"Pontos positivos da sessão em tópicos curtos, sem repetir informação"
 	)
 	var positives: [String]
@@ -32,6 +44,12 @@ struct SessionAnalysis {
 			"Próxima ação recomendada em uma frase direta e acionável"
 	)
 	var nextAction: String
+	
+	@Guide(
+		description:
+			"Três perguntas curtas e específicas que o usuário poderia fazer ao Vrum sobre esta sessão"
+	)
+	var smartQuestions: [String]
 	
 	@Guide(
 		description:

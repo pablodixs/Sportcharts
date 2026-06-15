@@ -21,6 +21,8 @@ final class SessionsViewModel {
 	private(set) var results: [SessionResult] = []
 	private(set) var sessions: [Session] = []
 	private(set) var session: [Session] = []
+	private(set) var sessionInsights: String = ""
+	private(set) var didLoadSessionInsights = false
 	
 	private(set) var state: State = .idle
 	
@@ -148,8 +150,29 @@ final class SessionsViewModel {
 		}
 	}
 	
+	func loadSessionInsights(sessionKey: Int) async {
+		guard !didLoadSessionInsights else {
+			return
+		}
+		
+		let laps = (try? await service.fetchLaps(sessionKey: sessionKey)) ?? []
+		let stints = (try? await service.fetchStints(sessionKey: sessionKey)) ?? []
+		let weather = (try? await service.fetchWeather(sessionKey: sessionKey)) ?? []
+		let raceControl = (try? await service.fetchRaceControl(sessionKey: sessionKey)) ?? []
+		
+		sessionInsights = OpenF1ContextBuilder.sessionInsights(
+			laps: laps,
+			stints: stints,
+			weather: weather,
+			raceControl: raceControl
+		)
+		didLoadSessionInsights = true
+	}
+	
 	func reset() {
 		results = []
+		sessionInsights = ""
+		didLoadSessionInsights = false
 		state = .idle
 	}
 }

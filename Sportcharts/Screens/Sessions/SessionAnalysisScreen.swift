@@ -242,6 +242,10 @@ struct SessionAnalysisScreen: View {
 
 				ToolbarItem {
 					Menu {
+						Button("Perguntar ao Vrum", systemImage: "tire") {
+							isSessionChatPresented = true
+						}
+						
 						Button("Copiar análise", systemImage: "doc.on.doc") {
 							guard !viewModel.analysisText.isEmpty else {
 								return
@@ -271,7 +275,10 @@ struct SessionAnalysisScreen: View {
 
 			}
 			.sheet(isPresented: $isSessionChatPresented) {
-				SessionChatSheet(sessionContext: sessionContext)
+				SessionChatSheet(
+					sessionContext: sessionContext,
+					smartQuestions: viewModel.smartQuestions
+				)
 			}
 			.onChange(of: viewModel.pilots.map(\.number)) { _, numbers in
 				guard !numbers.isEmpty else {

@@ -78,7 +78,10 @@ struct SessionDetailScreen: View {
 		.safeAreaBar(edge: .bottom) {
 			if case .success = viewModel.state {
 				Button {
-					isAnalysisSheetPresented.toggle()
+					Task {
+						await viewModel.loadSessionInsights(sessionKey: sessionKey)
+						isAnalysisSheetPresented.toggle()
+					}
 				} label: {
 					Label("Analizar sessão", systemImage: "sparkles.2")
 						.padding(8)
@@ -91,7 +94,10 @@ struct SessionDetailScreen: View {
 		.toolbar {
 			ToolbarItem(placement: .automatic) {
 				Button("Ask Vrum", systemImage: "tire") {
-					isChatPresented.toggle()
+					Task {
+						await viewModel.loadSessionInsights(sessionKey: sessionKey)
+						isChatPresented.toggle()
+					}
 				}
 			}
 		}
@@ -107,14 +113,19 @@ struct SessionDetailScreen: View {
 		.sheet(
 			isPresented: $isChatPresented,
 			content: {
+				let context = buildSessionContext()
 				SessionChatSheet(
-					sessionContext: buildSessionContext()
+					sessionContext: context,
+					smartQuestions: SessionSmartQuestionBuilder.questions(
+						from: context
+					)
 				)
 			}
 		)
 		.task {
 			await viewModel.loadSessionResults(sessionKey: sessionKey)
 			await viewModel.loadSessionByKey(key: sessionKey)
+			await viewModel.loadSessionInsights(sessionKey: sessionKey)
 		}
 		.onDisappear {
 			viewModel.reset()
@@ -182,6 +193,13 @@ struct SessionDetailScreen: View {
    
    \(results)
    """
+		
+		if !viewModel.sessionInsights.isEmpty {
+			context += """
+			
+			\(viewModel.sessionInsights)
+			"""
+		}
 		
 		if let question {
 			context += """

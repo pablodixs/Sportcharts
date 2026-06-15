@@ -34,18 +34,37 @@ final class OpenF1Service {
 		try await client.fetch(OpenF1Endpoint.sessions(key: key))
 	}
 	
-	func fetchDriverStandingsBySession(key: Int) async throws -> [DriverStanding] {
-		try await client.fetch(OpenF1Endpoint.driversStandings(sessionKey: key))
+	func fetchDriverStandingsBySession(
+		key: Int,
+		driverNumber: Int? = nil
+	) async throws -> [DriverStanding] {
+		try await client.fetch(OpenF1Endpoint.driversStandings(
+			sessionKey: key,
+			driverNumber: driverNumber
+		))
 	}
 
-//
-//    func fetchLaps(sessionKey: Int, driverNumber: Int? = nil) async throws -> [Lap] {
-//        try await client.fetch(.laps(sessionKey: sessionKey, driverNumber: driverNumber))
-//    }
-//
-//    func fetchWeather(sessionKey: Int) async throws -> [Weather] {
-//        try await client.fetch(.weather(sessionKey: sessionKey))
-//    }
+	func fetchLaps(sessionKey: Int, driverNumber: Int? = nil) async throws -> [Lap] {
+		try await client.fetch(OpenF1Endpoint.laps(
+			sessionKey: sessionKey,
+			driverNumber: driverNumber
+		))
+	}
+	
+	func fetchStints(sessionKey: Int, driverNumber: Int? = nil) async throws -> [Stint] {
+		try await client.fetch(OpenF1Endpoint.stints(
+			sessionKey: sessionKey,
+			driverNumber: driverNumber
+		))
+	}
+	
+	func fetchWeather(sessionKey: Int) async throws -> [Weather] {
+		try await client.fetch(OpenF1Endpoint.weather(sessionKey: sessionKey))
+	}
+	
+	func fetchRaceControl(sessionKey: Int) async throws -> [RaceControlEvent] {
+		try await client.fetch(OpenF1Endpoint.raceControl(sessionKey: sessionKey))
+	}
 
-    // demais endpoints seguem o mesmo padrão...
+	// demais endpoints seguem o mesmo padrão...
 }
