@@ -27,7 +27,6 @@ final class ChatViewModel {
 
 	var isResponding = false
 
-	private let service = OllamaService()
 	private let openF1Service = OpenF1Service()
 	private var driverContextCache: [Int: String] = [:]
 	private let maxHistoryMessages = 8
@@ -131,16 +130,25 @@ final class ChatViewModel {
 			return
 		}
 		do {
-			let stream = try await service.generateSessionAnalysis(
+			guard case .available = SystemLanguageModel.default.availability else {
+				throw FoundationSessionChatError.modelUnavailable
+			}
+
+			let response = try await requestSessionAnalysisResponse(
 				sessionContext: sessionContext
 			)
-			for try await chunk in stream {
-				messages[index].content += chunk
+
+			for character in response {
+				if Task.isCancelled { return }
+
+				messages[index].content.append(character)
+				try? await Task.sleep(nanoseconds: streamingDelayNanoseconds)
 			}
+
 			messages[index].state = .sent
 		} catch {
 			messages[index].content =
-			"Erro ao analisar sessão."
+			"Não consegui analisar a sessão com o Foundation Model agora."
 			messages[index].state = .error
 		}
 
@@ -374,6 +382,29 @@ private enum FoundationDriverChatError: Error {
 }
 
 extension ChatViewModel {
+	private func requestSessionAnalysisResponse(
+		sessionContext: String
+	) async throws -> String {
+		let session = LanguageModelSession(
+			instructions: buildSessionInstructions()
+		)
+
+		let response = try await session.respond(
+			to: """
+			Analise esta sessão com base no contexto abaixo.
+			Use apenas as informações fornecidas.
+			Destaque storyline, momento-chave, pontos positivos, melhorias e próxima ação.
+
+			Contexto resumido da sessão:
+			\(compactSessionContext(sessionContext))
+			"""
+		)
+
+		return response.content.trimmingCharacters(
+			in: .whitespacesAndNewlines
+		)
+	}
+
 	private func requestSessionResponse(
 		userMessage: String,
 		sessionContext: String
